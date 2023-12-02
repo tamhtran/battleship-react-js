@@ -5,16 +5,21 @@ class Battleship {
     // Origin of the ship on the grid, represented by x and y coordinates.
     private origin: [number, number];
 
+    // Boolean indicating whether the ship is vertical.
+    private isVertical: boolean;
 
     /**
      * Constructor to create a new Battleship instance.
      * 
      * @param shipLength The length of the ship.
      * @param origin The starting coordinate of the ship.
+     * @param isVertical Boolean indicating whether the ship is vertical.
      */
-    constructor(shipLength: number, origin: [number, number]) {
+    constructor(shipLength: number, origin: [number, number], isVertical: boolean) {
         this.parts = new Array(shipLength).fill(false);  // Initialize all parts as not hit
         this.origin = origin;
+        this.isVertical = isVertical;
+
     }
 
     // Getter to access the parts of the ship.
@@ -32,6 +37,11 @@ class Battleship {
         return this.origin;
     }
 
+    // Getter to check if the ship is vertical.
+    get getIsVertical(): boolean {
+        return this.isVertical;
+    }
+    
     /**
      * Method to record a hit on a part of the ship.
      * 
