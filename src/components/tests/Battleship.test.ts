@@ -5,7 +5,7 @@ test('Initialize Battleship', () => {
   expect(battleship.getParts).toEqual([false,false,false,false]);
   expect(battleship.getLength).toEqual(4);
   expect(battleship.getOrigin).toEqual([0,0]);
-  expect(battleship.getIsVertical).toEqual(true);
+  expect(battleship.getRotated).toEqual(true);
 });
 
 

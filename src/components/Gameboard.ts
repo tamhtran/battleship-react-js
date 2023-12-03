@@ -5,6 +5,8 @@ class Gameboard {
   private tiles: (boolean | Battleship)[][]; //false if not shot, true if missed, Battleship if hit
   private ships: Battleship[]; //array of Battleship objects
 
+
+  
   constructor(size: number) {
     this.size = size;
     this.tiles = Array.from({ length: size }, () =>
@@ -26,51 +28,79 @@ class Gameboard {
     return this.ships;
   }
 
-  /**
-   * Retrieves the board states, which includes the positions of ships that have been hit, ships that have not been hit,
-   * missed shots, and unshot tiles.
-   *
-   * @returns An object containing the board states with their corresponding positions.
-   */
-  get getGameboardStates(): { [state: string]: [number, number][] } {
+  // Returns an object with four arrays, each representing different states of the game board tiles: shipHit, shipNotHit, missed, and notShot.
+  get getBoardStates(): { [state: string]: [number, number][] } {
     const states: { [state: string]: [number, number][] } = {
       shipHit: [],
       shipNotHit: [],
       missed: [],
-      unShot: [],
+      notShot: [],
     };
 
-    for (let i = 0; i < this.size; ++i) {
-      for (let j = 0; j < this.size; ++j) {
-        this.addTileToState(i, j, states);
+    for(let i = 0; i < this.size; ++i) {
+      for(let j = 0; j < this.size; ++j) {
+        const tile = this.tiles[i][j];
+        if(typeof tile === "boolean") {
+          if(!tile) {
+            states.notShot.push([i, j]);
+          }
+          else {
+            states.missed.push([i, j]);
+          }
+        }
+        else {
+          const shipParts = tile.getParts;
+          const shipOrigin = tile.getOrigin;
+          const partToHit = shipOrigin[0] - i + (shipOrigin[1] - j);
+          if(!shipParts[partToHit]) {
+            states.shipNotHit.push([i, j]);
+          }
+          else {
+            states.shipHit.push([i, j]);
+          }
+        }
       }
     }
-
     return states;
   }
-  /**
-     * Resets the gameboard to its initial state.
-     */
-  resetGameboard(): void {
-    this.tiles = Array.from({ length: this.size }, () => 
-        new Array(this.size).fill(false)
-    );
-    this.ships = [];
-}
 
-
-/**
- * Determines and returns an array of valid tiles for ship placement.
- * 
- * @returns An array of valid tiles represented as [number, number][].
- */
+  //Determines and returns an array of valid tiles for ship placement. 
+  // It checks surrounding tiles to ensure a ship can be placed without overlapping or being adjacent to other ships.
   get getValidTiles(): [number, number][] {
-    const valid: [number, number][] = [];
-    const offset = [-1, 0, 1]; // Offset to check surrounding tiles
+    const valid: [number, number][] = []; // valid = eventually contain all the coordinates of tiles where a ship can start.
+    const offset: [number, number][] = [ // offset = coordinate offsets representing all 8 directions around a tile (including diagonals).
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ];
 
-    for (let i = 0; i < this.size; ++i) {
-      for (let j = 0; j < this.size; ++j) {
-        if (this.isTileValidForPlacement(i, j, offset)) {
+    // Iterate Over the Board
+    // For each tile, check if all surrounding tiles are valid.  
+    // If so, the current tile is added to the valid array.
+    for(let i = 0; i < this.size; ++i) {
+      for(let j = 0; j < this.size; ++j) {
+        if(
+
+          //Boundary Condition: If the surrounding tile is outside the board (checks like i + off[0] < 0), it's considered a valid surrounding tile for this purpose (since it's not interfering with any other ship).
+          offset.every((off) => {
+            if(
+              i + off[0] < 0 ||
+              i + off[0] > this.size - 1 ||
+              j + off[1] < 0 ||
+              j + off[1] > this.size - 1
+            ) {
+              return true;
+            }
+            // Check for Empty Tiles: If a surrounding tile is on the board, it must be false (indicating no ship is placed there) to be considered valid.
+            return this.tiles[i + off[0]][j + off[1]] === false;
+          })
+        ) {
+          // all surrounding tiles are valid, the current tile is added to the valid array.
           valid.push([i, j]);
         }
       }
@@ -78,60 +108,8 @@ class Gameboard {
     return valid;
   }
 
-  // Helper method used in getBoardStates to determine the state of a tile and add it to the appropriate category.
-  private addTileToState(
-    x: number,
-    y: number,
-    states: { [state: string]: [number, number][] }
-  ): void {
-    const tile = this.tiles[x][y];
-
-    if (typeof tile === "boolean") {
-      tile ? states.missed.push([x, y]) : states.unShot.push([x, y]);
-      return;
-    }
-
-    const partIndex = this.calculatePartIndex(tile, x, y);
-    tile.getParts[partIndex]
-      ? states.shipHit.push([x, y])
-      : states.shipNotHit.push([x, y]);
-  }
-
-  // Helper method to calculate the index of the ship part based on its position.
-  private calculatePartIndex(ship: Battleship, x: number, y: number): number {
-    const [originX, originY] = ship.getOrigin;
-    return ship.getIsVertical ? x - originX : y - originY;
-  }
-
-  // Helper method Check if a tile is within board boundaries
-  isWithinBoard(x: number, y: number): boolean {
-    return x >= 0 && x < this.size && y >= 0 && y < this.size;
-  }
-
-  //Helper method Check if a tile is empty
-  private isTileEmpty(x: number, y: number): boolean {
-    return this.isWithinBoard(x, y) && this.tiles[x][y] === false;
-  }
-
-  // Helper method to check if a tile is valid for ship placement
-  private isTileValidForPlacement(
-    x: number,
-    y: number,
-    offset: number[]
-  ): boolean {
-    for (let dx of offset) {
-      for (let dy of offset) {
-        if (!this.isTileEmpty(x + dx, y + dy)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-
   // Ship Placement and Movement
-  ////////////////////////////////////////////////////////
+
   /**
    *  Places a ship on the board. It checks if the placement is valid and updates the tiles array with the Battleship object.
    *
@@ -139,48 +117,59 @@ class Gameboard {
    * @param location The starting location of the ship as [x, y] coordinates.
    * @param isVertical Specifies whether the ship is placed vertically (true) or horizontally (false).
    * @throws Error if the ship placement is invalid.
-   */
-  placeShip(
-    shipLength: number,
-    location: [number, number],
-    isVertical: boolean
-  ): void {
-    // Constructing the ship and verifying the ship length does not exceed board boundaries
-    const ship = new Battleship(shipLength, location, isVertical);
-    for (let i = 0; i < shipLength; i++) {
-      const [x, y] = isVertical
-        ? [location[0] + i, location[1]]
-        : [location[0], location[1] + i];
-      if (!this.isWithinBoard(x, y) || !this.isTileEmpty(x, y)) {
+   */placeShip(shipLength: number, location: [number, number], rotated: boolean): void {
+  // Check for valid placement locations on the board (tiles not yet shot)
+  const validPlacement = this.getBoardStates.notShot;
+
+  // Create a new Battleship object
+  const battleship = new Battleship(shipLength, [location[0], location[1]], rotated);
+
+  // Calculate offsets for the placement of each part of the ship
+  const placementOffset: [number, number][] = Array.from(
+    { length: shipLength },
+    (_, k) => (rotated ? [k, 0] : [0, k])
+  );
+
+  // Define offsets for surrounding tiles of each ship part
+  const contactOffset: number[][] = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1], [1, 0], [1, 1],
+  ];
+
+  // Iterate over each part of the ship to validate placement
+  placementOffset.forEach((placement) => {
+    // Check if the placement is within valid areas
+    if (!validPlacement.some(
+      (tile) => tile[0] === location[0] - placement[0] &&
+                tile[1] === location[1] - placement[1]
+    )) {
+      throw new Error("Invalid ship placement.");
+    }
+
+    // Check for adjacent ships or out-of-boundary placements
+    contactOffset.forEach((contact) => {
+      const adjustedX = location[0] - placement[0] + contact[0];
+      const adjustedY = location[1] - placement[1] + contact[1];
+
+          // adjustedX < 0 || adjustedX > this.size - 1 ||
+          // adjustedY < 0 || adjustedY > this.size - 1 ||
+
+      if ( (adjustedX >= 0 && adjustedX <= this.size - 1) && (adjustedY >= 0 && adjustedY <= this.size - 1) && 
+          (this.tiles[adjustedX][adjustedY])) {
         throw new Error("Invalid ship placement.");
       }
-    }
+    });
+  });
 
-    // Placing the ship on the board
-    for (let i = 0; i < shipLength; i++) {
-      const [x, y] = isVertical
-        ? [location[0] + i, location[1]]
-        : [location[0], location[1] + i];
-      this.tiles[x][y] = ship;
-    }
+  // Place the ship on the board
+  placementOffset.forEach((placement) => {
+    this.tiles[location[0] - placement[0]][location[1] - placement[1]] = battleship;
+  });
 
-    // Adding the ship to the list of ships
-    this.ships.push(ship);
-  }
-
-  // Helper method to clear the ship from the board.
-  private clearShipFromBoard(
-    shipLength: number,
-    originX: number,
-    originY: number,
-    shipIsVertical: boolean
-  ): void {
-    for (let i = 0; i < shipLength; i++) {
-      const x = shipIsVertical ? originX + i : originX;
-      const y = shipIsVertical ? originY : originY + i;
-      this.tiles[x][y] = false;
-    }
-  }
+  // Add the ship to the list of ships on the board
+  this.ships.push(battleship);
+}
 
   /**
    * Removes a ship from the board at the specified location.
@@ -188,23 +177,28 @@ class Gameboard {
    *
    * @param location - The location of the ship to be removed.
    * @returns The removed ship, if any.
-   */
-  removeShip(location: [number, number]): void | Battleship {
-    const tileContent = this.tiles[location[0]][location[1]];
+   */  
+  removeShip(location: number[]): void | Battleship {
+    if(typeof this.tiles[location[0]][location[1]] === "boolean") return;
 
-    // Return early if the tile does not contain a ship.
-    if (!(tileContent instanceof Battleship)) return;
-
-    const ship = tileContent;
+    const ship = this.tiles[location[0]][location[1]] as Battleship;
     const shipLength = ship.getLength;
-    const [originX, originY] = ship.getOrigin;
-    const shipIsVertical = ship.getIsVertical;
+    const shipOrigin = ship.getOrigin;
+    const shipRotated = ship.getRotated;
+    const offset: [number, number][] = Array.from(
+      {length: shipLength},
+      (_, k) => (shipRotated ? [k, 0] : [0, k])
+    );
 
-    // Clear the ship from the board.
-    this.clearShipFromBoard(shipLength, originX, originY, shipIsVertical);
-
-    // Remove the ship from the ships array.
-    this.ships = this.ships.filter((s) => s !== ship);
+    offset.forEach((off) => {
+      this.tiles[shipOrigin[0] - off[0]][shipOrigin[1] - off[1]] = false;
+    });
+    this.ships = this.ships.filter((ship) =>
+      ship.getLength !== shipLength ||
+      ship.getOrigin[0] !== shipOrigin[0] ||
+      ship.getOrigin[1] !== shipOrigin[1] ||
+      ship.getRotated !== shipRotated
+    );
 
     return ship;
   }
@@ -216,19 +210,20 @@ class Gameboard {
    */
   rotateShip(location: [number, number]): boolean {
     const ship = this.removeShip(location);
-    if (ship) {
+    if(ship) {
       try {
-        this.placeShip(ship.getLength, ship.getOrigin, !ship.getIsVertical);
+        this.placeShip(ship.getLength, ship.getOrigin, !ship.getRotated);
         return true;
-      } catch {
-        this.placeShip(ship.getLength, ship.getOrigin, ship.getIsVertical);
+      }
+      catch {
+        this.placeShip(ship.getLength, ship.getOrigin, ship.getRotated);
         return false;
       }
     }
     return false;
   }
 
-  /**
+    /**
    * Moves a ship from one position to another on the board.
    *
    * @param from - The starting position of the ship as an array of [row, column].
@@ -237,93 +232,41 @@ class Gameboard {
    */
   moveShip(from: [number, number], to: [number, number]): boolean {
     const ship = this.removeShip(from);
-    if (ship) {
+    if(ship) {
       try {
-        this.placeShip(ship.getLength, to, ship.getIsVertical);
+        this.placeShip(ship.getLength, to, ship.getRotated);
         return true;
-      } catch {
-        //place back to original location if new location is invalid
-        this.placeShip(ship.getLength, from, ship.getIsVertical);
+      }
+      catch {
+        this.placeShip(ship.getLength, from, ship.getRotated);
         return false;
       }
     }
     return false;
   }
 
+  // Gameplay Mechanics
 
-  //Helper method
-  private checkAllSurroundingTiles(
-    ship: Battleship,
-    callback: (x: number, y: number) => void
-  ): void {
-    const shipLength = ship.getLength;
-    const [originX, originY] = ship.getOrigin;
-    const isVertical = ship.getIsVertical;
-    const offsets = [-1, 0, 1];
-
-    // Loop through each part of the ship
-    for (let i = 0; i < shipLength; i++) {
-      const partX = isVertical ? originX + i : originX;
-      const partY = isVertical ? originY : originY + i;
-
-      // Check and apply the callback to all surrounding tiles
-      offsets.forEach((dx) => {
-        offsets.forEach((dy) => {
-          if (dx === 0 && dy === 0) return; // Skip the ship part itself
-          const x = partX + dx;
-          const y = partY + dy;
-          if (this.isWithinBoard(x, y)) {
-            callback(x, y);
-          }
-        });
-      });
-    }
-  }
-
-  private markAroundSunk(ship: Battleship): void {
-    if (ship.isSunk()) {
-      this.checkAllSurroundingTiles(ship, (x, y) => {
-        if (this.isWithinBoard(x, y) && !this.tiles[x][y]) {
-          this.tiles[x][y] = true;
-        }
-      });
-    }
-  }
-
-  // Game Mechanics
-  ////////////////////////////////////////////////////////
-  /**
+/**
    * Receives an attack at the specified location on the board.Updates the board state based on whether the attack hits a ship or misses.
    *
    * @param location - The coordinates of the attack in the form [row, column].
    * @returns True if the attack is valid and hits a ship, false otherwise.
-   */
+   */  
   getAttacked(location: [number, number]): boolean {
-    const state = this.getGameboardStates;
-    const validAttacks = [...state.shipNotHit, ...state.unShot];
-    if (
-      !validAttacks.some(
-        (attack) => attack[0] === location[0] && attack[1] === location[1]
-      )
-    ) {
+    const state = this.getBoardStates;
+    const validAttacks = [...state.shipNotHit, ...state.notShot];
+    if(!validAttacks.some((attack) => attack[0] === location[0] && attack[1] === location[1])) {
       return false;
     }
-    if (
-      state.unShot.find((el) => el[0] === location[0] && el[1] === location[1])
-    ) {
+    if(state.notShot.find((el) => el[0] === location[0] && el[1] === location[1])) {
       this.tiles[location[0]][location[1]] = true;
       return true;
     }
-    if (
-      state.shipNotHit.find(
-        (el) => el[0] === location[0] && el[1] === location[1]
-      )
-    ) {
+    if(state.shipNotHit.find((el) => el[0] === location[0] && el[1] === location[1])) {
       const tile = this.tiles[location[0]][location[1]];
       (tile as Battleship).hit(
-        (tile as Battleship).getOrigin[0] -
-          location[0] +
-          ((tile as Battleship).getOrigin[1] - location[1])
+        ((tile as Battleship).getOrigin[0] - location[0]) + ((tile as Battleship).getOrigin[1] - location[1])
       );
       this.markAroundSunk(tile as Battleship);
       return true;
@@ -334,69 +277,84 @@ class Gameboard {
 /**
  * Checks if all the ships on the board are sunk.
  * @returns {boolean} True if all ships are sunk, false otherwise.
- */
-  allSunk(): boolean {
+ */  allSunk(): boolean {
     return this.ships.every((ship) => ship.isSunk());
   }
 
   //  Automatically places the specified ships on the board in random locations.
   generateRandomShips(ships: number[]): boolean {
-    return ships.slice()
+    const done: boolean[] = [];
+    ships
       .sort((a, b) => b - a)
-      .every((shipLength) => this.tryToPlaceShip(shipLength));
-  }
-
-  // Helper method to try to place a ship on the board.
-  private tryToPlaceShip(shipLength: number): boolean {
-    const triedPositions: Set<string> = new Set();
-    let attempts = 0;
-    const maxAttempts = 100; // Arbitrary max attempts to prevent near-infinite loops
-
-    while (attempts < maxAttempts) {
-      const location: [number, number] = this.getRandomLocation();
-      const isVertical: boolean = Math.random() < 0.5;
-      
-      const positionKey = `${location[0]}-${location[1]}-${isVertical}`;
-
-      if (!triedPositions.has(positionKey)) {
-        triedPositions.add(positionKey);
-        if (this.canPlaceShip(shipLength, location, isVertical)) {
-          this.placeShip(shipLength, location, isVertical);
-          return true;
+      .forEach((len) => {
+        let success = false;
+        const tried: [[number, number], boolean][] = [];
+        let location: [number, number] = [
+          Math.floor(Math.random() * this.size),
+          Math.floor(Math.random() * this.size)
+        ];
+        let rotated: boolean = Math.random() < .5;
+        const find = () => {
+          return tried.find((el) =>
+            el[0][0] === location[0] && el[0][1] === location[1] && el[1] === rotated
+          );
         }
-      }
-      attempts++;
-    }
-
-    return false;
+        do {
+          try {
+            do {
+              location = [
+                Math.floor(Math.random() * this.size),
+                Math.floor(Math.random() * this.size)
+              ];
+              rotated = Math.random() < .5;
+            } while(
+              find()
+            );
+            this.placeShip(len, location, rotated);
+            success = true;
+          }
+          catch {
+            tried.push([location, rotated]);
+            success = false;
+          }
+        } while(!success && tried.length < this.size * this.size);
+        done.push(success);
+      });
+    return done.every((d) => d);
   }
 
-  // Helper method to generate a random location on the board.
-  private getRandomLocation(): [number, number] {
-    return [
-      Math.floor(Math.random() * this.size),
-      Math.floor(Math.random() * this.size),
-    ];
-  }
-
-  // Helper method to check if a ship can be placed at a location.
-    private canPlaceShip(
-        shipLength: number,
-        location: [number, number],
-        isVertical: boolean
-    ): boolean {
-        for (let i = 0; i < shipLength; i++) {
-            const [x, y] = isVertical
-                ? [location[0] + i, location[1]]
-                : [location[0], location[1] + i];
-
-            if (!this.isWithinBoard(x, y) || !this.isTileEmpty(x, y)) {
-                return false;
-            }
-        }
-
-        return true;
+  // : Marks tiles around a sunk ship as 'missed' shots, to indicate that no other ships can be adjacent to the sunk ship.
+  private markAroundSunk(ship: Battleship): void {
+    if(ship.isSunk()) {
+      const origin = ship.getOrigin;
+      const partsOffset = Array.from({length: ship.getLength}, (_, k) => ship.getRotated ? [k, 0] : [0, k]);
+      const aroundOffset: number[][] = [
+        [-1, -1],
+        [-1, 0],
+        [-1, 1],
+        [0, -1],
+        [0, 1],
+        [1, -1],
+        [1, 0],
+        [1, 1],
+      ];
+      partsOffset.forEach((part) => {
+        aroundOffset.forEach((around) => {
+          if(
+            origin[0] - part[0] + around[0] < 0 ||
+            origin[0] - part[0] + around[0] > this.size - 1 ||
+            origin[1] - part[1] + around[1] < 0 ||
+            origin[1] - part[1] + around[1] > this.size - 1
+          ) {
+            return;
+          }
+          if(!this.tiles[origin[0] - part[0] + around[0]][origin[1] - part[1] + around[1]]) {
+            this.tiles[origin[0] - part[0] + around[0]][origin[1] - part[1] + around[1]] = true;
+          }
+        });
+      });
     }
+  }
 }
 
 export default Gameboard;

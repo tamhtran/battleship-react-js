@@ -19,7 +19,7 @@ const App = () => {
   // Updates the display message based on the game state (e.g., whose turn it is, if the game is not initialized, or if there's a winner).
   const updateDisplay = () => {
     if (!game.getInit) {
-      setDisplay('Move or Rotate ships');
+      setDisplay('Move/Rotate ships');
     } else if (game.getWinner !== -1) {
       setDisplay(`${game.getPlayer(game.getWinner).getName} won!`);
     } else if (game.getInit) {
