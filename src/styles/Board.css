@@ -1,0 +1,82 @@
+.board-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .board-wrapper {
+    opacity: 0.4;
+    display: flex;
+    flex-direction: column;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  
+  .board-row {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .board-tile {
+    position: relative;
+    width: calc(1.4rem + 1vw);
+    height: calc(1.4rem + 1vw);
+    margin: 0.1rem;
+    background-color: #e9ecef; /* Bootstrap gray-200 */
+    border: 2px solid #ced4da; /* Bootstrap gray-300 */
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  
+  /* Custom classes for tile states */
+  .ship-not-hit {
+    background-color: #00ffa2; /* Bootstrap primary color */
+  }
+  
+  .ship-hit {
+    background-color: #dc3545;
+  }
+  
+  .ship-sunk {
+    background-color: #bbbbbb;
+  }
+  
+  .missed {
+    background-color: rgb(147, 168, 245);
+  }
+  
+  .marked {
+    background-color: #ffc107; /* Bootstrap warning color */
+  }
+  
+  .marked-origin {
+    background-color: #ffc107;
+  }
+  
+  .valid {
+    background-color: #28a745; /* Bootstrap success color */
+  }
+  
+  .valid-origin {
+    background-color: #28a745;
+  }
+  
+  .invalid {
+    background-color: #dc3545; /* Bootstrap danger color */
+  }
+  
+  .invalid-origin {
+    background-color: #dc3545;
+  }
+  
+  .active .board-row .board-tile:hover {
+    border: 2px solid #878891;
+  }
+  
+  .header {
+    margin-top: 0.6rem;
+    font-weight: 500;
+    font-size: 1.3rem;
+  }
+  
+  

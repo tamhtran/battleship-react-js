@@ -1,0 +1,50 @@
+.ships-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    top: 1rem;
+  }
+  
+  .ships-container.player {
+    align-items: flex-end;
+    right: 95%;
+  }
+  
+  .ships-container.computer {
+    left: 95%;
+  }
+  
+  @media (max-width: 1150px) {
+    .ships-container {
+      display: none;
+    }
+  }
+  
+  @media (max-width: 1035px) {
+    .ships-container {
+      display: flex;
+    }
+  }
+  
+  @media (max-width: 570px) {
+    .ships-container {
+      display: none;
+    }
+  }
+  
+  .ship-wrapper {
+    display: flex;
+    gap: 0.3rem;
+  }
+  
+  .part {
+    width: 0.7rem;
+    height: 0.7rem;
+    background-color: #787878; /* Default color for ship parts */
+  }
+  
+  .part.sunk {
+    background-color: #bbbbbb; /* Color for sunk ship parts */
+  }
+  
